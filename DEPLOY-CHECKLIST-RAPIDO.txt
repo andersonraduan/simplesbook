@@ -1,0 +1,59 @@
+═══════════════════════════════════════════════════════
+  ✅ CHECKLIST RÁPIDO - DEPLOY
+═══════════════════════════════════════════════════════
+
+📦 ARQUIVO PRONTO: deploy-completo.zip (438 MB)
+
+═══════════════════════════════════════════════════════
+
+□ 1. UPLOAD
+    └─ Enviar deploy-completo.zip para:
+       ~/calendario.clinicalasante.pt/
+
+□ 2. SSH - COPIAR E COLAR TUDO:
+
+cd ~/calendario.clinicalasante.pt && \
+[ -d ".next" ] && mv .next .next.backup.$(date +%Y%m%d_%H%M%S) || true && \
+unzip -o deploy-completo.zip && \
+chmod -R 755 .next && \
+pm2 restart simplesbook && \
+sleep 5 && \
+pm2 logs simplesbook --lines 20 --nostream
+
+□ 3. VERIFICAR ERROS:
+
+pm2 logs simplesbook --err --lines 20 --nostream
+
+   ✅ NÃO deve ter:
+      - UntrustedHost
+      - Prisma Edge Runtime
+
+□ 4. TESTAR ENDPOINT:
+
+curl -I https://calendario.clinicalasante.pt/api/auth/session
+
+   ✅ Deve retornar: HTTP/2 200
+
+□ 5. TESTAR NAVEGADOR:
+
+https://calendario.clinicalasante.pt/login
+
+   ✅ Não deve ter erro 500
+
+□ 6. LIMPAR:
+
+rm deploy-completo.zip
+
+═══════════════════════════════════════════════════════
+
+✅ CORREÇÕES APLICADAS:
+  - trustHost: true (NextAuth)
+  - getToken() no middleware (Edge Runtime)
+  - Build otimizado com todas as correções
+
+═══════════════════════════════════════════════════════
+
+📄 Ver instruções completas: INSTRUCOES-EXTRACAO-DEPLOY.txt
+
+═══════════════════════════════════════════════════════
+

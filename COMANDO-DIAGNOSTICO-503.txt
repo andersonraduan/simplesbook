@@ -1,0 +1,85 @@
+═══════════════════════════════════════════════════════
+  🔍 COMANDO RÁPIDO - Diagnóstico 503
+═══════════════════════════════════════════════════════
+
+📋 COPIE E COLE TUDO NO SSH:
+
+cd ~/calendario.clinicalasante.pt && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  🔍 DIAGNÓSTICO 503" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "" && \
+echo "1️⃣ PM2 Status:" && \
+pm2 status && \
+echo "" && \
+echo "2️⃣ Porta 3000 está escutando?" && \
+if ss -tuln 2>/dev/null | grep -q ":3000" || netstat -tuln 2>/dev/null | grep -q ":3000"; then
+  echo "✅ SIM - Porta 3000 está em uso"
+  ss -tuln 2>/dev/null | grep ":3000" || netstat -tuln 2>/dev/null | grep ":3000"
+else
+  echo "❌ NÃO - Porta 3000 não está escutando"
+  echo "   → PM2 provavelmente não está rodando"
+fi && \
+echo "" && \
+echo "3️⃣ Testando http://localhost:3000..." && \
+LOCAL_TEST=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "000") && \
+if [ "$LOCAL_TEST" = "000" ]; then
+  echo "❌ Não conseguiu conectar na porta 3000"
+  echo "   → Servidor Express não está respondendo"
+else
+  echo "✅ Servidor respondeu: HTTP $LOCAL_TEST"
+fi && \
+echo "" && \
+echo "4️⃣ Logs PM2 (últimas 15 linhas):" && \
+pm2 logs simplesbook --lines 15 --nostream && \
+echo "" && \
+echo "5️⃣ Verificando .htaccess..." && \
+if [ -f ".htaccess" ]; then
+  echo "✅ .htaccess existe"
+  if grep -q "localhost:3000" .htaccess; then
+    echo "✅ Proxy configurado"
+    HTTPS_BEFORE=$(grep -n "HTTPS.*off" .htaccess | head -1 | cut -d: -f1) && \
+    PROXY_LINE=$(grep -n "localhost:3000" .htaccess | head -1 | cut -d: -f1) && \
+    if [ -n "$HTTPS_BEFORE" ] && [ -n "$PROXY_LINE" ] && [ "$HTTPS_BEFORE" -lt "$PROXY_LINE" ]; then
+      echo "✅ Ordem correta: HTTPS antes do proxy"
+    else
+      echo "❌ Ordem INCORRETA! HTTPS deve vir ANTES do proxy"
+      echo "   → Faça upload do .htaccess corrigido"
+    fi
+  else
+    echo "❌ Proxy NÃO encontrado no .htaccess"
+  fi
+else
+  echo "❌ .htaccess não existe"
+fi && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  📋 RESUMO" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "" && \
+if [ "$LOCAL_TEST" != "000" ] && ss -tuln 2>/dev/null | grep -q ":3000"; then
+  echo "✅ Servidor Express está rodando"
+  echo "   → Problema provavelmente é no .htaccess"
+  echo "   → Faça upload do .htaccess corrigido"
+else
+  echo "❌ Servidor Express NÃO está rodando"
+  echo "   → Execute: pm2 restart simplesbook"
+fi && \
+echo ""
+
+═══════════════════════════════════════════════════════
+
+✅ PRÓXIMOS PASSOS BASEADOS NO DIAGNÓSTICO:
+
+1. Se porta 3000 não está escutando:
+   → pm2 restart simplesbook
+
+2. Se .htaccess está com ordem incorreta:
+   → Fazer upload do .htaccess corrigido
+
+3. Se tudo parece OK mas ainda dá 503:
+   → Verificar logs do Apache
+   → Verificar se mod_proxy está habilitado
+
+═══════════════════════════════════════════════════════
+

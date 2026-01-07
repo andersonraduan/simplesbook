@@ -1,0 +1,77 @@
+═══════════════════════════════════════════════════════
+  🔧 COMANDOS PARA CORRIGIR AUTH EM PRODUÇÃO
+═══════════════════════════════════════════════════════
+
+✅ ARQUIVOS CORRIGIDOS:
+  1. src/auth.ts - Adicionado trustHost: true
+  2. src/middleware.ts - Trocado auth() por getToken() (Edge Runtime)
+
+═══════════════════════════════════════════════════════
+
+📦 PASSO 1: BUILD LOCAL (no seu PC)
+═══════════════════════════════════════════════════════
+
+npm run build
+
+# Aguarde o build terminar (pode demorar 1-2 minutos)
+
+═══════════════════════════════════════════════════════
+
+📤 PASSO 2: ENVIAR PARA PRODUÇÃO
+═══════════════════════════════════════════════════════
+
+Fazer upload via FTP/SFTP dos seguintes arquivos:
+
+  1. src/auth.ts
+  2. src/middleware.ts
+  3. .next/ (pasta completa - substituir)
+
+OU comprimir e enviar:
+
+  # Windows PowerShell
+  Compress-Archive -Path .next -DestinationPath next-build.zip -Force
+  
+  # Depois fazer upload do next-build.zip e extrair no servidor
+
+═══════════════════════════════════════════════════════
+
+🔄 PASSO 3: NO SERVIDOR (SSH)
+═══════════════════════════════════════════════════════
+
+cd ~/calendario.clinicalasante.pt
+
+# Se enviou o ZIP, extrair:
+unzip -o next-build.zip
+chmod -R 755 .next
+chown -R clini489:clini489 .next
+
+# Reiniciar PM2
+pm2 restart simplesbook
+
+# Aguardar 5 segundos
+sleep 5
+
+# Verificar logs
+pm2 logs simplesbook --lines 30 --nostream
+
+═══════════════════════════════════════════════════════
+
+✅ PASSO 4: VERIFICAR SE FUNCIONOU
+═══════════════════════════════════════════════════════
+
+# Ver logs de erro (NÃO deve aparecer UntrustedHost ou Prisma Edge)
+pm2 logs simplesbook --err --lines 20 --nostream
+
+# Testar endpoint
+curl -I https://calendario.clinicalasante.pt/api/auth/session
+
+# Deve retornar: HTTP/2 200
+
+═══════════════════════════════════════════════════════
+
+❌ ERROS QUE DEVEM DESAPARECER:
+  - UntrustedHost: Host must be trusted
+  - PrismaClient is not configured to run in Edge Runtime
+
+═══════════════════════════════════════════════════════
+

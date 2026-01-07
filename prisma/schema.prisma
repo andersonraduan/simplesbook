@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  password              String
+  name                  String?
+  role                  Role                   @default(USER)
+  active                Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  clientes              Cliente[]
+  servicos              Servico[]
+  agendamentos          Agendamento[]
+  notificationTemplates NotificationTemplate[]
+  preferences           UserPreferences?
+}
+
+model Cliente {
+  id              String        @id @default(cuid())
+  nome            String
+  email           String
+  telemovel       String
+  dataNascimento  DateTime
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agendamentos    Agendamento[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model Servico {
+  id                  String               @id @default(cuid())
+  titulo              String
+  descricao           String               @db.Text
+  valor               Decimal              @db.Decimal(10, 2)
+  timeExecution       Int                  @map("time_execution")
+  userId              String
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agendamentosServico AgendamentoServico[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([userId])
+}
+
+model Agendamento {
+  id                     String                  @id @default(cuid())
+  clienteId              String
+  cliente                Cliente                 @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  userId                 String
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataHoraInicio         DateTime
+  dataHoraFim            DateTime
+  valorTotal             Decimal                 @db.Decimal(10, 2)
+  duracaoTotal           Int
+  status                 StatusAgendamento       @default(PENDENTE)
+  observacoes            String?                 @db.Text
+  servicos               AgendamentoServico[]
+  notificationsScheduled NotificationScheduled[]
+  notificationsLog       NotificationLog[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([clienteId])
+  @@index([dataHoraInicio])
+}
+
+model AgendamentoServico {
+  id             String      @id @default(cuid())
+  agendamentoId  String
+  agendamento    Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  servicoId      String
+  servico        Servico     @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  valor          Decimal     @db.Decimal(10, 2)
+  timeExecution  Int
+  createdAt      DateTime    @default(now())
+
+  @@index([agendamentoId])
+  @@index([servicoId])
+}
+
+model NotificationTemplate {
+  id                     String                  @id @default(cuid())
+  userId                 String
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo                   TipoNotificacao
+  nome                   String
+  intervaloMinutos       Int?                    // null = disparo imediato
+  mensagemSMS            String?                 @db.Text
+  mensagemWhatsApp       String?                 @db.Text
+  habilitarSMS           Boolean                 @default(false)
+  habilitarWhatsApp      Boolean                 @default(false)
+  ativo                  Boolean                 @default(true)
+  notificationsScheduled NotificationScheduled[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  @@unique([userId, tipo, intervaloMinutos])
+  @@index([userId])
+  @@index([tipo])
+}
+
+model NotificationScheduled {
+  id                     String               @id @default(cuid())
+  agendamentoId          String
+  agendamento            Agendamento          @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  templateId             String
+  template               NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  canal                  CanalNotificacao
+  destinatario           String               // número de telefone
+  mensagem               String               @db.Text
+  dataHoraAgendada       DateTime
+  status                 StatusNotificacao    @default(PENDENTE)
+  tentativas             Int                  @default(0)
+  ultimaTentativa        DateTime?
+  erroMensagem           String?              @db.Text
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([agendamentoId])
+  @@index([templateId])
+  @@index([status])
+  @@index([dataHoraAgendada])
+}
+
+model NotificationLog {
+  id            String            @id @default(cuid())
+  agendamentoId String
+  agendamento   Agendamento       @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  tipo          TipoNotificacao
+  canal         CanalNotificacao
+  destinatario  String
+  mensagem      String            @db.Text
+  status        StatusNotificacao
+  twilioSid     String?
+  erroMensagem  String?           @db.Text
+  createdAt     DateTime          @default(now())
+
+  @@index([agendamentoId])
+  @@index([createdAt])
+}
+
+model UserPreferences {
+  id                         String          @id @default(cuid())
+  userId                     String          @unique
+  user                       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarioView             CalendarioView  @default(SEMANA)
+  horarioInicioAtendimento   String          @default("08:00")
+  horarioFimAtendimento      String          @default("20:00")
+  intervaloSlot              Int             @default(30)
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+model SystemSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum StatusAgendamento {
+  PENDENTE
+  CONFIRMADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum TipoNotificacao {
+  CONFIRMACAO
+  LEMBRETE
+  DIA_DO_AGENDAMENTO
+  CANCELAMENTO
+  MUDANCA_STATUS
+}
+
+enum CanalNotificacao {
+  SMS
+  WHATSAPP
+}
+
+enum StatusNotificacao {
+  PENDENTE
+  ENVIADA
+  FALHA
+  CANCELADA
+}
+
+enum CalendarioView {
+  DIA
+  TRES_DIAS
+  SEMANA
+  MES
+}

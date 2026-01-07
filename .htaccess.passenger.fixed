@@ -1,0 +1,116 @@
+# SimplesBook - Configuração CORRIGIDA para Passenger
+# Esta configuração SUBSTITUI proxy reverso por Passenger nativo
+
+# ============================================
+# CONFIGURAÇÃO PASSENGER
+# ============================================
+
+# Habilitar Passenger
+PassengerEnabled On
+
+# Tipo de aplicação
+PassengerAppType node
+
+# Arquivo de inicialização
+PassengerStartupFile app.js
+
+# ⚠️ IMPORTANTE: AJUSTE ESTES PATHS PARA SEU SERVIDOR
+# Para descobrir o path correto, execute no SSH terminal:
+#   pwd                    (para ver o diretório da aplicação)
+#   which node             (para ver o path do Node.js)
+# 
+# Exemplo real:
+# PassengerAppRoot /home/clini489/calendario.clinicalasante.pt
+# PassengerNodejs /home/clini489/nodevenv/calendario.clinicalasante.pt/20/bin/node
+
+PassengerAppRoot /home/SEU_USUARIO/calendario.clinicalasante.pt
+PassengerNodejs /home/SEU_USUARIO/nodevenv/calendario.clinicalasante.pt/20/bin/node
+
+# Variáveis de ambiente
+SetEnv NODE_ENV production
+
+# ============================================
+# REDIRECIONAMENTO HTTPS
+# ============================================
+
+RewriteEngine On
+
+# Redirecionar HTTP para HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ============================================
+# SERVIR ARQUIVOS ESTÁTICOS DO NEXT.JS
+# ============================================
+
+# Permitir acesso direto a arquivos estáticos do Next.js
+# Essas regras DEVEM vir ANTES de qualquer outra regra Rewrite
+
+# Servir arquivos do diretório .next/static/
+<FilesMatch "^.*\.(css|js|map|json|woff|woff2|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp)$">
+    # Permitir CORS se necessário
+    Header set Access-Control-Allow-Origin "*"
+</FilesMatch>
+
+# Cache agressivo para assets estáticos do Next.js (immutable)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff|woff2|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# ============================================
+# TIPOS MIME (CRÍTICO!)
+# ============================================
+
+# Garantir que CSS e JS sejam servidos com MIME types corretos
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType application/json .json
+    AddType application/json .map
+    AddType image/svg+xml .svg
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+    AddType font/ttf .ttf
+    AddType font/eot .eot
+</IfModule>
+
+# ============================================
+# HEADERS DE SEGURANÇA
+# ============================================
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "origin-when-cross-origin"
+</IfModule>
+
+# ============================================
+# COMPRESSÃO GZIP
+# ============================================
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# ============================================
+# CACHE PARA OUTROS ASSETS
+# ============================================
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>

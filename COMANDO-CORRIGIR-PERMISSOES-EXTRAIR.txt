@@ -1,0 +1,84 @@
+═══════════════════════════════════════════════════════
+  🔐 CORRIGIR PERMISSÕES E EXTRAIR
+═══════════════════════════════════════════════════════
+
+O .next/ tem arquivos com permissões bloqueadas.
+Vamos corrigir as permissões primeiro!
+
+═══════════════════════════════════════════════════════
+
+📋 COPIE E COLE TUDO NO SSH:
+
+cd ~/calendario.clinicalasante.pt && \
+echo "🔐 Corrigindo permissões do .next..." && \
+chmod -R 755 .next 2>/dev/null || true && \
+chown -R clini489:clini489 .next 2>/dev/null || true && \
+find .next -type d -exec chmod 755 {} \; 2>/dev/null || true && \
+find .next -type f -exec chmod 644 {} \; 2>/dev/null || true && \
+echo "✅ Permissões corrigidas" && \
+echo "" && \
+echo "🗑️ Removendo .next antigo..." && \
+rm -rf .next && \
+echo "✅ .next removido" && \
+echo "" && \
+echo "🗑️ Removendo arquivos fonte antigos..." && \
+rm -f src/auth.ts src/middleware.ts ecosystem.config.js && \
+echo "✅ Arquivos removidos" && \
+echo "" && \
+echo "📦 Extraindo deploy-completo.zip..." && \
+unzip -o deploy-completo.zip && \
+echo "✅ Arquivos extraídos" && \
+echo "" && \
+echo "🔐 Ajustando permissões dos novos arquivos..." && \
+chmod -R 755 .next && \
+chmod 644 src/auth.ts src/middleware.ts ecosystem.config.js && \
+echo "✅ Permissões ajustadas" && \
+echo "" && \
+echo "🔄 Reiniciando aplicação..." && \
+pm2 restart simplesbook && \
+echo "✅ PM2 reiniciado" && \
+echo "" && \
+echo "⏳ Aguardando 10 segundos..." && \
+sleep 10 && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  📊 STATUS" && \
+echo "═══════════════════════════════════════════════════════" && \
+pm2 status && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  📋 LOGS (últimas 25 linhas)" && \
+echo "═══════════════════════════════════════════════════════" && \
+pm2 logs simplesbook --lines 25 --nostream && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  🧪 TESTE DO ENDPOINT" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "" && \
+curl -I https://calendario.clinicalasante.pt/api/auth/session 2>&1 | head -1 && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  ✅ CONCLUÍDO!" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "" && \
+echo "📝 Verifique se:" && \
+echo "   1. Status = online" && \
+echo "   2. Logs sem erro UntrustedHost ou Prisma Edge" && \
+echo "   3. Endpoint retornou HTTP/2 200 ou 400" && \
+echo ""
+
+═══════════════════════════════════════════════════════
+
+✅ PASSOS DO COMANDO:
+  1. Corrigir permissões do .next/ antigo (755)
+  2. Corrigir ownership (clini489:clini489)
+  3. Remover .next/ antigo
+  4. Remover arquivos fonte antigos
+  5. Extrair deploy-completo.zip
+  6. Ajustar permissões dos novos arquivos
+  7. Reiniciar PM2
+  8. Aguardar inicialização
+  9. Mostrar status, logs e testar endpoint
+
+═══════════════════════════════════════════════════════
+

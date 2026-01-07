@@ -1,0 +1,131 @@
+═══════════════════════════════════════════════════════
+  📦 INSTRUÇÕES DE DEPLOY - deploy-completo.zip
+═══════════════════════════════════════════════════════
+
+✅ Arquivo: deploy-completo.zip (438 MB)
+
+📦 Conteúdo:
+  ✓ .next/ (build completo)
+  ✓ src/auth.ts (trustHost: true)
+  ✓ src/middleware.ts (getToken para Edge Runtime)
+  ✓ ecosystem.config.js (configuração PM2)
+
+═══════════════════════════════════════════════════════
+
+📤 PASSO 1: UPLOAD DO ZIP
+═══════════════════════════════════════════════════════
+
+1. Fazer upload do deploy-completo.zip via:
+   - FTP/SFTP
+   - cPanel File Manager
+   
+2. Destino: ~/calendario.clinicalasante.pt/
+
+═══════════════════════════════════════════════════════
+
+🔧 PASSO 2: EXTRAÇÃO NO SERVIDOR (via SSH)
+═══════════════════════════════════════════════════════
+
+Conectar via SSH e copiar/colar TUDO de uma vez:
+
+cd ~/calendario.clinicalasante.pt && \
+echo "=== Fazendo backup do .next atual ===" && \
+[ -d ".next" ] && mv .next .next.backup.$(date +%Y%m%d_%H%M%S) || echo "Sem backup anterior" && \
+echo "=== Extraindo ZIP ===" && \
+unzip -o deploy-completo.zip && \
+echo "=== Ajustando permissões ===" && \
+chmod -R 755 .next && \
+chmod 644 src/auth.ts src/middleware.ts ecosystem.config.js && \
+chown -R clini489:clini489 .next src/auth.ts src/middleware.ts ecosystem.config.js && \
+echo "=== Reiniciando PM2 ===" && \
+pm2 restart simplesbook && \
+sleep 5 && \
+echo "" && \
+echo "=== Status Final ===" && \
+pm2 status && \
+echo "" && \
+pm2 logs simplesbook --lines 20 --nostream
+
+═══════════════════════════════════════════════════════
+
+✅ PASSO 3: VERIFICAÇÃO
+═══════════════════════════════════════════════════════
+
+1. Verificar que NÃO há erros críticos:
+
+   pm2 logs simplesbook --err --lines 30 --nostream
+   
+   ❌ NÃO deve aparecer:
+      - UntrustedHost
+      - PrismaClient is not configured to run in Edge Runtime
+
+2. Testar endpoint de sessão:
+
+   curl -I https://calendario.clinicalasante.pt/api/auth/session
+   
+   ✅ Deve retornar: HTTP/2 200
+
+3. Testar no navegador:
+
+   https://calendario.clinicalasante.pt/login
+   
+   ✅ Não deve ter erro 500
+
+═══════════════════════════════════════════════════════
+
+🧹 PASSO 4: LIMPEZA (após confirmar que funciona)
+═══════════════════════════════════════════════════════
+
+Remover ZIP e backups antigos:
+
+cd ~/calendario.clinicalasante.pt
+rm deploy-completo.zip
+
+# Manter apenas último backup (opcional)
+ls -dt .next.backup.* | tail -n +2 | xargs rm -rf
+
+═══════════════════════════════════════════════════════
+
+🆘 SE DER PROBLEMA - ROLLBACK
+═══════════════════════════════════════════════════════
+
+1. Parar aplicação:
+   
+   pm2 stop simplesbook
+
+2. Restaurar backup:
+   
+   cd ~/calendario.clinicalasante.pt
+   rm -rf .next
+   mv .next.backup.XXXXXXXX_XXXXXX .next
+
+3. Reiniciar:
+   
+   pm2 restart simplesbook
+
+═══════════════════════════════════════════════════════
+
+📋 RESUMO DOS ERROS CORRIGIDOS
+═══════════════════════════════════════════════════════
+
+✅ ANTES:
+   ❌ GET /api/auth/session 500 (Internal Server Error)
+   ❌ [auth][error] UntrustedHost
+   ❌ PrismaClient is not configured to run in Edge Runtime
+
+✅ DEPOIS:
+   ✅ GET /api/auth/session 200 OK
+   ✅ NextAuth aceita o host calendario.clinicalasante.pt
+   ✅ Middleware compatível com Edge Runtime
+
+═══════════════════════════════════════════════════════
+
+🚀 PRONTO PARA DEPLOY!
+
+1. Upload do deploy-completo.zip
+2. SSH e executar comandos do PASSO 2
+3. Verificar PASSO 3
+4. Limpar PASSO 4
+
+═══════════════════════════════════════════════════════
+

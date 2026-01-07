@@ -1,0 +1,100 @@
+═══════════════════════════════════════════════════════
+  🔧 CORRIGIR ERRO 503 - Service Unavailable
+═══════════════════════════════════════════════════════
+
+❌ PROBLEMA: 503 Service Unavailable
+✅ CAUSA: .htaccess com ordem incorreta OU PM2 não rodando
+
+═══════════════════════════════════════════════════════
+
+📋 PASSO 1: DIAGNÓSTICO (via SSH)
+═══════════════════════════════════════════════════════
+
+Execute para ver o que está errado:
+
+cd ~/calendario.clinicalasante.pt && \
+echo "1. PM2 Status:" && \
+pm2 status && \
+echo "" && \
+echo "2. Porta 3000:" && \
+ss -tuln | grep ":3000" || echo "❌ Porta 3000 não está escutando" && \
+echo "" && \
+echo "3. Teste local:" && \
+curl -I http://localhost:3000 2>&1 | head -1 && \
+echo "" && \
+echo "4. Logs PM2:" && \
+pm2 logs simplesbook --lines 10 --nostream
+
+═══════════════════════════════════════════════════════
+
+🔧 PASSO 2: CORRIGIR .htaccess
+═══════════════════════════════════════════════════════
+
+O .htaccess foi corrigido localmente.
+Faça upload do novo .htaccess para o servidor.
+
+MUDANÇA PRINCIPAL:
+  ❌ ANTES: Proxy primeiro, HTTPS depois
+  ✅ AGORA: HTTPS primeiro, Proxy depois
+
+═══════════════════════════════════════════════════════
+
+🔄 PASSO 3: REINICIAR PM2 (se necessário)
+═══════════════════════════════════════════════════════
+
+Se o diagnóstico mostrar que PM2 não está rodando:
+
+cd ~/calendario.clinicalasante.pt && \
+pm2 restart simplesbook && \
+sleep 5 && \
+pm2 status && \
+curl -I http://localhost:3000 2>&1 | head -1
+
+═══════════════════════════════════════════════════════
+
+✅ PASSO 4: VERIFICAR
+═══════════════════════════════════════════════════════
+
+1. Testar localmente:
+   
+   curl -I http://localhost:3000
+   
+   ✅ Deve retornar: HTTP/1.1 200
+
+2. Testar via HTTPS:
+   
+   curl -I https://calendario.clinicalasante.pt
+   
+   ✅ Deve retornar: HTTP/2 200
+
+═══════════════════════════════════════════════════════
+
+🆘 SE AINDA DER 503
+═══════════════════════════════════════════════════════
+
+1. Verificar se mod_proxy está habilitado:
+   
+   # Contatar suporte da hospedagem se necessário
+
+2. Ver logs do Apache:
+   
+   tail -f /usr/local/apache/logs/error_log
+
+3. Verificar se .htaccess foi aplicado:
+   
+   # Testar se mudanças no .htaccess são refletidas
+
+═══════════════════════════════════════════════════════
+
+📝 RESUMO DAS CORREÇÕES
+═══════════════════════════════════════════════════════
+
+✅ .htaccess corrigido:
+   - HTTPS redirecionamento ANTES do proxy
+   - Ordem correta das regras RewriteRule
+
+✅ Script de diagnóstico criado:
+   - DIAGNOSTICO-503-COMPLETO.sh
+
+═══════════════════════════════════════════════════════
+

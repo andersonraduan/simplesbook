@@ -1,0 +1,82 @@
+COMANDO ÚNICO PARA CORRIGIR SYMLINK NODE_MODULES
+================================================
+
+Copie e cole TUDO de uma vez no servidor:
+
+cd ~/calendario.clinicalasante.pt && \
+export PATH="$HOME/nodevenv/calendario.clinicalasante.pt/24/bin:$PATH" && \
+echo "=== 1. Parando PM2 ===" && \
+pm2 stop simplesbook 2>/dev/null || true && \
+pm2 delete simplesbook 2>/dev/null || true && \
+echo "✅ PM2 parado" && \
+echo "" && \
+echo "=== 2. Removendo node_modules ===" && \
+rm -rf node_modules && \
+echo "✅ node_modules removido" && \
+echo "" && \
+echo "=== 3. Reinstalando dependências (SEM symlinks) ===" && \
+echo "Isso pode demorar alguns minutos..." && \
+npm install --production --no-bin-links --legacy-peer-deps && \
+echo "✅ Dependências instaladas" && \
+echo "" && \
+echo "=== 4. Corrigindo permissões ===" && \
+chmod -R 755 node_modules && \
+chown -R clini489:clini489 node_modules 2>/dev/null || true && \
+echo "✅ Permissões corrigidas" && \
+echo "" && \
+echo "=== 5. Verificando symlinks ===" && \
+SYMLINKS=$(find node_modules -type l 2>/dev/null | wc -l) && \
+echo "Symlinks encontrados: $SYMLINKS" && \
+if [ "$SYMLINKS" -gt 100 ]; then \
+    echo "⚠️ Muitos symlinks ainda. Tentando reinstalar novamente..." && \
+    rm -rf node_modules && \
+    npm install --production --no-bin-links --legacy-peer-deps && \
+    chmod -R 755 node_modules && \
+fi && \
+echo "" && \
+echo "=== 6. Testando server.js (5 segundos) ===" && \
+timeout 5 NODE_ENV=production node server.js 2>&1 & \
+TEST_PID=$! && \
+sleep 3 && \
+if ps -p $TEST_PID > /dev/null 2>&1; then \
+    echo "✅ server.js iniciou sem erros" && \
+    kill $TEST_PID 2>/dev/null || true; \
+else \
+    echo "⚠️ server.js pode ter problemas. Continuando mesmo assim..."; \
+fi && \
+echo "" && \
+echo "=== 7. Iniciando PM2 ===" && \
+NODE_ENV=production pm2 start ecosystem.config.js --update-env && \
+pm2 save && \
+echo "✅ PM2 iniciado" && \
+echo "" && \
+echo "=== 8. Aguardando 20 segundos ===" && \
+sleep 20 && \
+echo "" && \
+echo "=== 9. Verificando status ===" && \
+pm2 status && \
+echo "" && \
+echo "=== 10. Verificando porta 3000 ===" && \
+if ss -tuln 2>/dev/null | grep -q ":3000"; then \
+    echo "✅ Porta 3000 está escutando!" && \
+    ss -tuln | grep 3000; \
+elif netstat -tuln 2>/dev/null | grep -q ":3000"; then \
+    echo "✅ Porta 3000 está escutando!" && \
+    netstat -tuln | grep 3000; \
+else \
+    echo "❌ Porta 3000 ainda não está escutando" && \
+    echo "Últimos logs de erro:" && \
+    pm2 logs simplesbook --err --lines 20 --nostream 2>&1 | tail -20; \
+fi && \
+echo "" && \
+echo "=== 11. Testando conexão ===" && \
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200\|301\|302"; then \
+    echo "✅ Aplicação responde!" && \
+    curl -I http://localhost:3000 2>&1 | head -3; \
+else \
+    echo "❌ Aplicação ainda não responde" && \
+    echo "Ver logs: pm2 logs simplesbook --err"; \
+fi && \
+echo "" && \
+echo "✅ PROCESSO CONCLUÍDO!"
+

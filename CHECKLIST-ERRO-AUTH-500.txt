@@ -1,0 +1,40 @@
+═══════════════════════════════════════════════════════
+  🔐 CHECKLIST RÁPIDO - Erro 500 NextAuth
+═══════════════════════════════════════════════════════
+
+❌ PROBLEMA: GET /api/auth/session 500 (Internal Server Error)
+✅ CAUSA: Variáveis NEXTAUTH_SECRET e DATABASE_URL não carregadas
+
+═══════════════════════════════════════════════════════
+
+□ PASSO 1: Criar .env no servidor
+  └─ cd ~/calendario.clinicalasante.pt
+  └─ nano .env
+  └─ Adicionar:
+     DATABASE_URL="mysql://user:pass@localhost:3306/db"
+     NEXTAUTH_SECRET="<gerar com: openssl rand -base64 32>"
+     NEXTAUTH_URL="https://calendario.clinicalasante.pt"
+  └─ chmod 600 .env
+
+□ PASSO 2: Upload do ecosystem.config.js atualizado
+  └─ Arquivo já está atualizado localmente
+  └─ Fazer upload via FTP/SFTP
+
+□ PASSO 3: Reiniciar PM2
+  └─ pm2 stop simplesbook
+  └─ pm2 delete simplesbook
+  └─ pm2 start ecosystem.config.js
+  └─ pm2 save
+
+□ PASSO 4: Verificar
+  └─ pm2 logs simplesbook --lines 20
+  └─ Não deve aparecer: "⚠️ NEXTAUTH_SECRET não está definido"
+  └─ curl -I https://calendario.clinicalasante.pt/api/auth/session
+  └─ Deve retornar: HTTP/2 200
+
+═══════════════════════════════════════════════════════
+
+📋 Ver guia completo: CORRIGIR-ERRO-AUTH-500.md
+
+═══════════════════════════════════════════════════════
+

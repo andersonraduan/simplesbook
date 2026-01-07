@@ -1,0 +1,65 @@
+═══════════════════════════════════════════════════════
+  🧹 COMANDO PARA LIMPAR E EXTRAIR
+═══════════════════════════════════════════════════════
+
+⚠️ IMPORTANTE: Certifique-se que deploy-completo.zip foi enviado!
+
+═══════════════════════════════════════════════════════
+
+📋 COPIE E COLE TUDO NO SSH:
+
+cd ~/calendario.clinicalasante.pt && \
+pm2 stop simplesbook && \
+echo "🗑️ Removendo arquivos antigos..." && \
+rm -rf .next && \
+rm -f src/auth.ts src/middleware.ts ecosystem.config.js && \
+echo "📦 Extraindo ZIP..." && \
+unzip -o deploy-completo.zip && \
+echo "🔐 Ajustando permissões..." && \
+chmod -R 755 .next && \
+chmod 644 src/auth.ts src/middleware.ts ecosystem.config.js && \
+echo "🔄 Reiniciando..." && \
+pm2 restart simplesbook && \
+sleep 10 && \
+echo "" && \
+echo "═══ STATUS ═══" && \
+pm2 status && \
+echo "" && \
+echo "═══ LOGS ═══" && \
+pm2 logs simplesbook --lines 20 --nostream && \
+echo "" && \
+echo "═══ TESTE ═══" && \
+curl -I https://calendario.clinicalasante.pt/api/auth/session 2>&1 | head -1 && \
+echo ""
+
+═══════════════════════════════════════════════════════
+
+✅ O QUE SERÁ FEITO:
+  1. ✓ Parar aplicação
+  2. ✓ Remover .next/ antigo
+  3. ✓ Remover src/auth.ts, src/middleware.ts, ecosystem.config.js antigos
+  4. ✓ Extrair deploy-completo.zip
+  5. ✓ Ajustar permissões
+  6. ✓ Reiniciar aplicação
+  7. ✓ Mostrar status e logs
+  8. ✓ Testar endpoint
+
+═══════════════════════════════════════════════════════
+
+⚠️ ARQUIVOS QUE SERÃO PRESERVADOS:
+  - node_modules/
+  - .env
+  - prisma/
+  - logs/
+  - Todos os outros arquivos do projeto
+
+═══════════════════════════════════════════════════════
+
+❌ SE O ZIP NÃO FOI ENVIADO:
+
+Você verá erro: "unzip: cannot find"
+
+Solução: Fazer upload de deploy-completo.zip primeiro!
+
+═══════════════════════════════════════════════════════
+

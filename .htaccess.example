@@ -1,0 +1,62 @@
+# SimplesBook - Configuração Apache
+# Renomeie este arquivo para .htaccess e coloque na raiz do domínio
+
+# ============================================
+# OPÇÃO 1: Para Passenger (cPanel) - RECOMENDADO
+# ============================================
+# Descomentar se usar Passenger:
+
+# PassengerEnabled On
+# PassengerAppType node
+# PassengerStartupFile app.js
+# PassengerAppRoot /home/usuario/calendario.clinicalasante.pt
+# PassengerNodejs /home/usuario/nodevenv/calendario.clinicalasante.pt/20/bin/node
+
+# ============================================
+# OPÇÃO 2: Para Proxy Reverso (PM2 ou standalone)
+# ============================================
+# Descomentar se usar PM2:
+
+# Habilitar Rewrite Engine
+RewriteEngine On
+
+# Redirecionar HTTP para HTTPS (recomendado)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Proxy para aplicação Node.js rodando na porta 3000
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+
+# Headers de segurança
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "origin-when-cross-origin"
+    
+    # HSTS (descomentar após configurar SSL)
+    # Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# Compressão GZIP
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache para assets estáticos
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType application/x-shockwave-flash "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>
+

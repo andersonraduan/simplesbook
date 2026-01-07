@@ -1,0 +1,91 @@
+═══════════════════════════════════════════════════════
+  🔐 CORRIGIR PERMISSÕES E REINICIAR PM2
+═══════════════════════════════════════════════════════
+
+❌ PROBLEMAS IDENTIFICADOS:
+  1. PM2 está STOPPED
+  2. Erro de permissão no .next/static/chunks
+
+═══════════════════════════════════════════════════════
+
+📋 COPIE E COLE TUDO NO SSH:
+
+cd ~/calendario.clinicalasante.pt && \
+echo "🔐 1. Corrigindo permissões do .next/..." && \
+find .next -type d -exec chmod 755 {} \; 2>/dev/null || true && \
+find .next -type f -exec chmod 644 {} \; 2>/dev/null || true && \
+chmod -R 755 .next 2>/dev/null || true && \
+chown -R clini489:clini489 .next 2>/dev/null || true && \
+echo "✅ Permissões corrigidas" && \
+echo "" && \
+echo "🔄 2. Parando PM2 (se estiver rodando)..." && \
+pm2 stop simplesbook 2>/dev/null || true && \
+pm2 delete simplesbook 2>/dev/null || true && \
+echo "✅ PM2 parado" && \
+echo "" && \
+echo "🚀 3. Iniciando PM2..." && \
+pm2 start ecosystem.config.js && \
+echo "✅ PM2 iniciado" && \
+echo "" && \
+echo "⏳ 4. Aguardando inicialização (8 segundos)..." && \
+sleep 8 && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  📊 STATUS" && \
+echo "═══════════════════════════════════════════════════════" && \
+pm2 status && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  🧪 TESTE LOCAL" && \
+echo "═══════════════════════════════════════════════════════" && \
+LOCAL_TEST=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "000") && \
+if [ "$LOCAL_TEST" = "000" ]; then
+  echo "❌ Não conseguiu conectar"
+  echo "   Verificando logs de erro..."
+  pm2 logs simplesbook --err --lines 10 --nostream
+else
+  echo "✅ Servidor respondeu: HTTP $LOCAL_TEST"
+fi && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  📋 LOGS (últimas 15 linhas)" && \
+echo "═══════════════════════════════════════════════════════" && \
+pm2 logs simplesbook --lines 15 --nostream && \
+echo "" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "  ✅ PROCESSO CONCLUÍDO" && \
+echo "═══════════════════════════════════════════════════════" && \
+echo "" && \
+if [ "$LOCAL_TEST" != "000" ]; then
+  echo "✅ Servidor está funcionando!"
+  echo "   Teste no navegador: https://calendario.clinicalasante.pt"
+else
+  echo "❌ Servidor ainda não está respondendo"
+  echo "   Verifique os logs acima para mais detalhes"
+fi && \
+echo ""
+
+═══════════════════════════════════════════════════════
+
+✅ O QUE SERÁ FEITO:
+  1. Corrigir permissões recursivamente no .next/
+  2. Parar e deletar processo PM2 antigo
+  3. Iniciar PM2 com ecosystem.config.js
+  4. Aguardar inicialização
+  5. Testar conexão local
+  6. Mostrar status e logs
+
+═══════════════════════════════════════════════════════
+
+🆘 SE AINDA DER ERRO DE PERMISSÃO:
+═══════════════════════════════════════════════════════
+
+Execute este comando mais agressivo:
+
+cd ~/calendario.clinicalasante.pt && \
+chmod -R u+rwX,go+rX .next && \
+chown -R clini489:clini489 .next && \
+pm2 restart simplesbook
+
+═══════════════════════════════════════════════════════
+

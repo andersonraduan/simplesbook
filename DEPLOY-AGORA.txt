@@ -1,0 +1,103 @@
+═══════════════════════════════════════════════════════
+  🚀 DEPLOY - INSTRUÇÕES RÁPIDAS
+═══════════════════════════════════════════════════════
+
+✅ ARQUIVOS CORRIGIDOS (pronto para deploy):
+  1. src/auth.ts
+  2. src/middleware.ts
+  3. ecosystem.config.js
+
+═══════════════════════════════════════════════════════
+
+📤 PASSO 1: FAZER UPLOAD (via FTP/cPanel)
+═══════════════════════════════════════════════════════
+
+Faça upload destes 3 arquivos para o servidor:
+
+  ~/calendario.clinicalasante.pt/src/auth.ts
+  ~/calendario.clinicalasante.pt/src/middleware.ts
+  ~/calendario.clinicalasante.pt/ecosystem.config.js
+
+═══════════════════════════════════════════════════════
+
+🔧 PASSO 2: EXECUTAR NO SERVIDOR (via SSH)
+═══════════════════════════════════════════════════════
+
+Copie e cole TUDO de uma vez:
+
+cd ~/calendario.clinicalasante.pt && \
+source /home/clini489/nodevenv/calendario.clinicalasante.pt/24/bin/activate && \
+echo "=== Regenerando Prisma ===" && \
+npx prisma generate && \
+echo "=== Fazendo backup ===" && \
+[ -d ".next" ] && mv .next .next.backup.$(date +%Y%m%d_%H%M%S) || true && \
+echo "=== Build (1-2 min) ===" && \
+npm run build && \
+echo "=== Ajustando permissões ===" && \
+chmod -R 755 .next && \
+echo "=== Reiniciando PM2 ===" && \
+pm2 restart simplesbook && \
+sleep 5 && \
+echo "=== Status ===" && \
+pm2 status && \
+echo "" && \
+echo "=== Logs ===" && \
+pm2 logs simplesbook --lines 20 --nostream
+
+═══════════════════════════════════════════════════════
+
+✅ PASSO 3: VERIFICAR SE FUNCIONOU
+═══════════════════════════════════════════════════════
+
+1. Verificar logs (NÃO deve ter estes erros):
+   
+   pm2 logs simplesbook --err --lines 20 --nostream
+   
+   ❌ NÃO deve aparecer:
+      - UntrustedHost
+      - PrismaClient is not configured to run in Edge Runtime
+
+2. Testar endpoint:
+   
+   curl -I https://calendario.clinicalasante.pt/api/auth/session
+   
+   ✅ Deve retornar: HTTP/2 200
+
+3. Testar no navegador:
+   
+   Abrir: https://calendario.clinicalasante.pt/login
+   
+   ✅ Não deve ter erro 500
+
+═══════════════════════════════════════════════════════
+
+📋 SCRIPT ALTERNATIVO (mais completo)
+═══════════════════════════════════════════════════════
+
+Se preferir, use o script completo:
+
+chmod +x DEPLOY-CORRECAO-AUTH.sh
+./DEPLOY-CORRECAO-AUTH.sh
+
+═══════════════════════════════════════════════════════
+
+🆘 SE DER PROBLEMA
+═══════════════════════════════════════════════════════
+
+1. Restaurar backup:
+   
+   pm2 stop simplesbook
+   rm -rf .next
+   mv .next.backup.XXXXXXXX_XXXXXX .next
+   pm2 restart simplesbook
+
+2. Ver logs completos:
+   
+   pm2 logs simplesbook --err --lines 100
+
+3. Verificar .env:
+   
+   cat .env | grep -E "NEXTAUTH_SECRET|DATABASE_URL" | head -2
+
+═══════════════════════════════════════════════════════
+
